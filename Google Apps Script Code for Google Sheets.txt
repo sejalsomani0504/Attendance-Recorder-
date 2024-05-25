@@ -1,0 +1,48 @@
+//Google Apps Script Code for Google Sheets
+
+var ss = SpreadsheetApp.openById('180w8nDM-W7IeGG8Os08OJUtMdnH7mvC6LV04I8O5buo');
+var sheet = ss.getSheetByName('Sheet1');
+
+function doGet(e) {
+  if (e.parameter.action === 'read') {
+    // READ operation
+    if (e.parameter.range) {
+      var data = sheet.getRange(e.parameter.range).getValue();
+      return ContentService.createTextOutput(data);
+    } else {
+      var data = sheet.getRange('A2:B' + sheet.getLastRow()).getValues();
+      return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+    }
+  } else if (e.parameter.action === 'write') {
+    // WRITE operation
+    var result = 'Ok'; // Assume success
+    var newRow = e.parameter.Row || sheet.getLastRow() + 1;
+    var column = e.parameter.Column;
+    var value = e.parameter.Value;
+
+    if (column && value) {
+      var columnIndex = getColumnIndex(column);
+
+      if (columnIndex > 0) {
+        var rowData = [];
+        rowData[0] = value; // Always write to the first column
+        var newRange = sheet.getRange(newRow, columnIndex, 1, 1);
+        newRange.setValues([rowData]);
+        result = `Written on column ${column} in row ${newRow}`;
+      } else {
+        result = 'Invalid Column';
+      }
+    } else {
+      result = 'Missing Column or Value';
+    }
+
+    return ContentService.createTextOutput(result);
+  } else {
+    return ContentService.createTextOutput('Invalid Request');
+  }
+}
+
+function getColumnIndex(columnName) {
+  // Convert a column name (e.g., 'A', 'B', 'C', ...) to a 1-based column index
+  return columnName ? columnName.toUpperCase().charCodeAt(0) - 64 : 0;
+}
